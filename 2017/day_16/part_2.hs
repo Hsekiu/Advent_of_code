@@ -31,8 +31,15 @@ instructRun (x:xs) y =
 
 findposition char = (\(Just i)->i) . findIndex (==char)
 
+countCycle :: [String] -> Int -> Int
+countCycle [x] y = 0
+countCycle (x:xs) y = if loc == [] then countCycle xs (y + 1) else ((loc!!0) + y + 1)
+    where loc = elemIndices x xs
+
 main = do
     contents <- readFile "input.txt"
     let input = map (splitOn " ") (lines contents)
     let instructions = splitOn "," ((input!!0)!!0)
-    print (instructRun instructions ['a'..'p'])
+    let cycle = (countCycle (take 100 (iterate (instructRun instructions) ['a'..'p'])) 0)
+    let position =  1000000000 `mod` cycle
+    print ((iterate (instructRun instructions) ['a'..'p'])!!position)
