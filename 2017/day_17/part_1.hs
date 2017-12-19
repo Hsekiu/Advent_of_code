@@ -14,4 +14,5 @@ findposition ele = (\(Just i)->i) . findIndex (==ele)
 
 main = do
     let buffer = spin [0] 0 0
+    print buffer
     print (buffer !! ((findposition 2017 buffer) + 1))
