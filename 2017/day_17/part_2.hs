@@ -11,4 +11,4 @@ spin x y z | y == 50000000 = []
     where newpos = (z + 343) `mod` x  
 
 main = do
-    print ((reverse (spin 1 0 0)) !! 0)
+    print $ last $ spin 1 0 0
