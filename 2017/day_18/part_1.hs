@@ -19,38 +19,47 @@ findposition char = (\(Just i)->i) . elemIndex char
 incRegister :: [(Char, Int)] -> Char -> (Int -> Int) -> [(Char, Int)]
 incRegister x y z = 
     if pos < 0 
-    then x ++ [(y, z 1)] 
+    then x ++ [(y, z 0)] 
     else list1 ++ [(y, z (snd (ele !! 0)))] ++ list2
         where pos = if ele == [] then -1 else (findposition (ele !! 0) x)
               list1 = fst (splitAt pos x)
               ele = filter (\x->fst x == y) x
               list2 = tail $ snd (splitAt pos x)
 
-runInstruction :: [String] -> Int -> [(Char, Int)] -> Int
-runInstruction x pos regs
+runInstruction :: [String] -> Int -> [(Char, Int)] -> Int -> Int
+runInstruction x pos regs lastfreq
     | pos >= length x = trace ("Ran out of instructions") $ 0
-    | ins == "snd" = 
-        runInstruction x (succ pos) regs --(incRegister regs (snd (findreg!!0)))
-    | ins == "set" = 
-        runInstruction x (succ pos) (incRegister regs (varx!!0) (\x->x*0 + vary))
-    | ins == "add" = 
-        runInstruction x (succ pos) (incRegister regs (varx!!0) (+vary))
-    | ins == "mul" = 
-        runInstruction x (succ pos) (incRegister regs (varx!!0) (*vary))
-    | ins == "mod" = 
-        runInstruction x (succ pos) (incRegister regs (varx!!0) (`mod` vary)) 
-    | ins == "rcv" = 
-        if (snd (findreg!!0) /= 0)
-        then (snd (findreg!!0))
-        else runInstruction x (succ pos) regs
-    | ins == "jgz" = 
-        if vary > 0
-        then runInstruction x (newpos) regs
-        else runInstruction x (succ pos) regs
+    | ins == "snd" = trace ("snd") $
+        runInstruction x (succ pos) regs (snd ((findreg varx) !! 0))
+    | ins == "set" = trace ("set") $
+        runInstruction x (succ pos) (incRegister regs (varx !! 0) (\x->x*0 + newvary)) lastfreq
+    | ins == "add" = trace ("add") $
+        runInstruction x (succ pos) (incRegister regs (varx !! 0) (+newvary)) lastfreq
+    | ins == "mul" = trace ("mul") $
+        runInstruction x (succ pos) (incRegister regs (varx !! 0) (*newvary)) lastfreq
+    | ins == "mod" = trace ("mod") $
+        runInstruction x (succ pos) (incRegister regs (varx !! 0) (`mod` newvary)) lastfreq
+    | ins == "rcv" = trace ("rcv") $
+        if (snd ((findreg varx) !! 0) /= 0)
+        then lastfreq
+        else runInstruction x (succ pos) regs lastfreq
+    | ins == "jgz" = trace ("jgz " ++ show newpos ++ " " ++ show (snd ((findreg varx) !! 0) > 0)) $
+        if (snd ((findreg varx) !! 0) > 0)
+        then runInstruction x (newpos) regs lastfreq
+        else runInstruction x (succ pos) regs lastfreq
     | otherwise = trace ("Instruction not known") $ 0
         where input = splitOn " " (x !! pos) 
               varx = input !! 1
-              vary = if (length input /= 3) then 0 else read (input !! 2) :: Int
+              vary = if (length input /= 3) then "0" else (input !! 2)
+              newvary = 
+                  if isLetter (vary !! 0)
+                  then snd ((findreg vary) !! 0)  
+                  else read vary :: Int
               ins = input !! 0
-              newpos = if (vary < 0) then pos + vary + 1 else pos + vary - 1
-              findreg = filter (\x->fst x == (varx!!0)) regs
+              newpos = if (newvary < 0) then pos + newvary else pos + newvary
+              findreg var = filter (\x->fst x == (var !! 0)) regs
+
+main = do
+    contents <- readFile "input.txt"
+    let input = (lines contents)
+    print (runInstruction input 0 [] 0)
